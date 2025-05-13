@@ -36,7 +36,8 @@ st.title("Event Log Analyzer")
 pages = (
     st.Page("pages/1_Upload.py", title="Upload File"),
     st.Page("pages/2_Mapping.py", title="Map Columns"),
-    st.Page("pages/3_Filter_Visualization.py", title="Filter and Visualize")
+    st.Page("pages/3_Filter_Visualization.py", title="Filter and Visualize"),
+    st.Page("pages/4_Data_Provenance.py", title="Data Provenance")
 )
 
 pg = st.navigation(pages)
