@@ -3,9 +3,14 @@ import pandas as pd
 import altair as alt
 from datetime import datetime
 
+# ------------------------------------------------------------
+# This file is dedicated to filtering event log cases based on user-defined conditions and visualizing the results.
+# ------------------------------------------------------------
+
 from app.backend.query_processor import (
     filter_cases_by_condition,
-    get_numeric_attributes_distribution_initial_state, get_numeric_attributes_distribution_last_state
+    get_numeric_attributes_distribution_initial_state,
+    get_numeric_attributes_distribution_last_state
 )
 
 from app.backend.visualization_builder import (
@@ -24,9 +29,9 @@ activity_col = mapping["activity"]
 timestamp_col = mapping["timestamp"]
 resource_col = mapping.get("resource")
 
+
 def apply_filter(df, condition, case_column):
     try:
-        #st.write(f"Condition: {condition}")
         result_set, complement_set = filter_cases_by_condition(df, condition, case_column)
 
         st.write(f"Number of cases in result set: {result_set[case_col].nunique()}")
@@ -43,10 +48,9 @@ def apply_filter(df, condition, case_column):
     except Exception as e:
         st.error(f"Error applying filter: {e}")
 
-def show_dashboard(result_set, complement_set):
 
+def show_dashboard(result_set, complement_set):
     col1, col2 = st.columns(2)
-    # shared_y = alt.Scale(domain=[0, max(activities["Result Set (Cases)"].max(), activities["Complement Set (Cases)"].max())])
 
     with col1:
         show_activity_distribution(result_set, complement_set)
@@ -58,20 +62,16 @@ def show_dashboard(result_set, complement_set):
 
 
 def show_activity_distribution(result_set, complement_set):
-    st.subheader("Activity Exclusivity")
-
-    # event_log = st.session_state.get("df")
+    st.subheader("Activity Frequency")
 
     if event_log is None or mapping is None:
         st.error("Event log or column mapping not found in session state.")
         return
 
     result_activities = result_set[[case_col, activity_col]].drop_duplicates().groupby(activity_col)[case_col].nunique()
-    complement_activities = complement_set[[case_col, activity_col]].drop_duplicates().groupby(activity_col)[
-        case_col].nunique()
+    complement_activities = complement_set[[case_col, activity_col]].drop_duplicates().groupby(activity_col)[case_col].nunique()
     full_activities = event_log[[case_col, activity_col]].drop_duplicates().groupby(activity_col)[case_col].nunique()
 
-    # Build combined DataFrame
     activity_data = pd.DataFrame({
         "Activity": full_activities.index,
         "Full Log": full_activities,
@@ -79,9 +79,9 @@ def show_activity_distribution(result_set, complement_set):
         "Complement Set": complement_activities.reindex(full_activities.index, fill_value=0),
     }).reset_index(drop=True)
 
-    # Build and show the interactive chart
     chart = build_activity_distribution_chart(activity_data)
     st.altair_chart(chart, use_container_width=True)
+
 
 def show_attribute_distribution(result_set, complement_set):
     st.subheader("Distribution of Numeric Attribute")
@@ -116,15 +116,12 @@ def show_attribute_distribution(result_set, complement_set):
             complement_df = get_numeric_attributes_distribution_initial_state(complement_set, case_col, timestamp_col, selected_column)
             full_log_df = get_numeric_attributes_distribution_initial_state(event_log, case_col, timestamp_col, selected_column)
 
-        # Label each set
         result_df["Subset"] = "Result Set"
         complement_df["Subset"] = "Complement Set"
         full_log_df["Subset"] = "Full Log"
 
-        # Combine into one DataFrame
         combined_df = pd.concat([result_df, complement_df, full_log_df], ignore_index=True)
 
-        # Define scale ranges
         min_val = combined_df[selected_column].min()
         max_val = combined_df[selected_column].max()
         max_count = combined_df[selected_column].value_counts().max()
@@ -132,28 +129,26 @@ def show_attribute_distribution(result_set, complement_set):
         x_shared = alt.Scale(domain=[min_val, max_val])
         y_shared = alt.Scale(domain=[0, max_count])
 
-        # Build and show combined chart
         chart = build_combined_numeric_distribution_chart(combined_df, selected_column, x_shared, y_shared)
         st.altair_chart(chart, use_container_width=True)
+
 
 def show_case_duration_distribution(result_set, complement_set):
     st.subheader("Case Duration Distribution")
 
-    # Calculate durations for result set and complement set
     result_durations = calculate_case_duration(result_set, case_col, timestamp_col)
     complement_durations = calculate_case_duration(complement_set, case_col, timestamp_col)
+    full_log_durations = calculate_case_duration(event_log, case_col, timestamp_col)
 
-    # Combine durations with labels
     result_durations['Subset'] = 'Result Set'
     complement_durations['Subset'] = 'Complement Set'
-    full_log_durations = calculate_case_duration(event_log, case_col, timestamp_col)
     full_log_durations['Subset'] = 'Full Log'
 
     combined_durations = pd.concat([result_durations, complement_durations, full_log_durations], ignore_index=True)
 
-    # Build the Altair chart for case durations
     chart = build_case_duration_chart(combined_durations)
     st.altair_chart(chart, use_container_width=True)
+
 
 def case_filter_ui():
     st.header("Case Filter")
@@ -166,10 +161,6 @@ def case_filter_ui():
         st.session_state["complement_set"] = None
         st.session_state["show_dashboard_now"] = False
         st.session_state["saved_filters"] = {}
-
-    # Reset dashboard visibility when revisiting this page
-    if not st.session_state.get("filter_applied", False):
-        st.session_state["show_dashboard_now"] = False
 
     st.session_state["df"] = df
     column_mapping = st.session_state.get("column_mapping")
@@ -209,18 +200,18 @@ def case_filter_ui():
         selected_vals = st.multiselect("Select values", values)
         if selected_vals:
             formatted_vals = ", ".join([repr(v) for v in selected_vals])
-            condition = f"`{selected_column}` in [{formatted_vals}]"
+            condition = f"{selected_column} in [{formatted_vals}]"
 
     elif pd.api.types.is_numeric_dtype(df[selected_column]):
         values = sorted(df[selected_column].dropna().unique())
         selected_vals = st.multiselect("Select values", values)
         if selected_vals:
             formatted_vals = ", ".join(map(str, selected_vals))
-            condition = f"`{selected_column}` in [{formatted_vals}]"
+            condition = f"{selected_column} in [{formatted_vals}]"
 
     elif df[selected_column].dropna().isin([True, False]).all():
         val = st.selectbox("Choose value", df[selected_column].dropna().unique())
-        condition = f"`{selected_column}` == {val}"
+        condition = f"{selected_column} == {val}"
 
     else:
         st.warning("Unsupported column type.")
@@ -233,14 +224,11 @@ def case_filter_ui():
         if st.button("Apply Filter", type="primary"):
             apply_filter(df, condition, case_col)
             st.session_state["filter_applied"] = True
-            st.session_state["show_dashboard_now"] = True
+            st.session_state["show_dashboard_now"] = True  # Dashboard will show after this
 
-    # Show dashboard only immediately after applying a filter
-    if st.session_state.get("show_dashboard_now", False):
+    if st.session_state.get("filter_applied", False) and st.session_state.get("result_set") is not None:
         show_dashboard(st.session_state["result_set"], st.session_state["complement_set"])
-        st.session_state["show_dashboard_now"] = False  # Hide on next render
 
-    # Saved filters section
     st.subheader("Saved Filters")
 
     filter_name = st.text_input("Name this filter", value=f"Filter {len(st.session_state['saved_filters']) + 1}")
@@ -259,8 +247,10 @@ def case_filter_ui():
     if st.session_state["saved_filters"]:
         selected_filter = st.selectbox("Choose a saved filter", list(st.session_state["saved_filters"].keys()))
         if selected_filter:
-            st.markdown(f"**Condition:** `{st.session_state['saved_filters'][selected_filter]['condition']}`")
+            st.markdown(f"*Condition:* {st.session_state['saved_filters'][selected_filter]['condition']}")
 
     if st.button("Back", type="secondary", key="Back_to_mapping"):
         st.switch_page("pages/2_Mapping.py")
+
+
 case_filter_ui()

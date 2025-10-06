@@ -4,6 +4,15 @@ import pm4py
 import tempfile
 
 def handle_csv_upload(file):
+    """
+        load of event log in csv format.
+
+        Parameters:
+        - file: .csv file containinig event log
+
+        Returns:
+        - A dataframe containing the event log.
+        """
     try:
         df = pd.read_csv(file)
         return df
@@ -13,6 +22,15 @@ def handle_csv_upload(file):
 
 
 def handle_xes_upload(file):
+    """
+            load of event log in xes format.
+
+            Parameters:
+            - file: .xes file containinig event log
+
+            Returns:
+            - A dataframe containing the event log.
+            """
     try:
         with tempfile.NamedTemporaryFile(suffix=".xes", delete=False) as tmp:
             tmp.write(file.read())
@@ -28,6 +46,20 @@ def handle_xes_upload(file):
         return None
 
 def process_uploaded_file(uploaded_file):
+    """
+    Processes an uploaded event log file in CSV or XES format.
+
+    This function handles file uploads, validates the file type,
+    parses the contents into a DataFrame, and stores the result in
+    the Streamlit session state for later use.
+
+    Parameters:
+    - uploaded_file: Uploaded event log file in CSV or XES format.
+
+    Returns:
+    - None. The parsed DataFrame is stored in st.session_state["df"].
+      If the file type is unsupported or parsing fails, an error is shown.
+    """
     if uploaded_file is not None:
         if uploaded_file.name.endswith(".csv"):
             df = handle_csv_upload(uploaded_file)

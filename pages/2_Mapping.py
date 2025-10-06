@@ -1,6 +1,10 @@
 import streamlit as st
 from app.backend.event_log_attributes_mapper import map_event_log_columns
 
+# ------------------------------------------------------------
+# This file is dedicated to the column mapping page where users assign event log columns (Case ID, Activity, Timestamp, Resource).
+# ------------------------------------------------------------
+
 st.header("Event Log Column Mapping")
 
 df = st.session_state.get("df")
@@ -68,7 +72,6 @@ if df is not None:
                 ]
             })
 
-    # Navigation buttons
     col1, col2, col3 = st.columns([1, 6, 1])
     with col1:
         if st.button("Back", type="secondary", key="Back_to_upload"):
